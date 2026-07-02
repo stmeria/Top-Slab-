@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Top Slab — Rebar Designer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:sans-serif;font-size:13px;color:#e2e8f0;background:#0f1117;min-height:100vh}
+.app{display:grid;grid-template-columns:290px 1fr;min-height:100vh}
+.panel{padding:12px;border-right:1px solid #2d3748;overflow-y:auto;background:#1a1f2e}
+.rhs{padding:12px;display:flex;flex-direction:column;gap:8px;background:#0f1117;min-width:0}
+.sh{font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 5px}
+.sh:first-child{margin-top:0}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px}
+.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:5px}
+.field{display:flex;flex-direction:column;gap:2px}
+label{font-size:10px;color:#94a3b8}
+input,select{height:28px;padding:0 7px;border:1px solid #374151;border-radius:5px;background:#252d3d;color:#e2e8f0;font-size:12px;width:100%}
+input:focus,select:focus{outline:none;border-color:#3b82f6}
+select option{background:#252d3d}
+.btn{height:30px;padding:0 12px;border:1px solid #4b5563;border-radius:5px;background:#252d3d;color:#e2e8f0;font-size:12px;cursor:pointer}
+.btn:hover{background:#374151}
+.btn-primary{background:#3b82f6;color:#fff;border-color:#3b82f6;width:100%;margin-top:6px;height:34px;font-size:13px;font-weight:500;cursor:pointer;border-radius:5px}
+.btn-primary:hover{background:#2563eb}
+.btn-sm{height:22px;padding:0 7px;font-size:10px;background:#2d1515;border:1px solid #7f1d1d;color:#f87171;border-radius:4px;cursor:pointer}
+.ocard{border:1px solid #2d3748;border-radius:5px;padding:7px;margin-bottom:5px;background:#252d3d}
+.ocard.err{border-color:#ef4444;background:#2d1515}
+.ohdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:11px;font-weight:500}
+hr{border:none;border-top:1px solid #2d3748;margin:8px 0}
+.matcard{border:1px solid #2d3748;border-radius:5px;padding:8px;margin-bottom:6px;background:#1e2533}
+.tabs{display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap}
+.tab{flex:1;min-width:90px;height:28px;border:1px solid #374151;border-radius:5px;background:#252d3d;color:#94a3b8;font-size:11px;cursor:pointer}
+.tab.on{border-color:#3b82f6;background:#1e3a5f;color:#93c5fd;font-weight:500}
+.seg-row{display:flex;gap:5px;margin-bottom:5px}
+.seg{flex:1;height:26px;border:1px solid #374151;border-radius:4px;background:#252d3d;color:#94a3b8;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.seg.on{border-color:#3b82f6;background:#1e3a5f;color:#93c5fd;font-weight:500}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:5px}
+.stat{background:#1a1f2e;border:1px solid #2d3748;border-radius:5px;padding:6px 8px}
+.stat-l{font-size:9px;color:#64748b;margin-bottom:1px}
+.stat-v{font-size:14px;font-weight:500;color:#93c5fd}
+canvas{border:1px solid #2d3748;border-radius:5px;display:block;width:100%;background:#1e2533}
+.errmsg{font-size:10px;color:#f87171;margin-bottom:5px;padding:6px 8px;background:#1a0a0a;border:1px solid #7f1d1d;border-radius:4px;display:none}
+.errmsg.on{display:block}
+.warnmsg{font-size:10px;color:#fbbf24;margin-bottom:5px;padding:6px 8px;background:#1c1405;border:1px solid #d97706;border-radius:4px;display:none}
+.warnmsg.on{display:block}
+.tbl-wrap{border:1px solid #2d3748;border-radius:5px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#1a1f2e;padding:5px 7px;text-align:left;font-size:10px;color:#94a3b8;border-bottom:1px solid #2d3748;font-weight:500}
+th.r,td.r{text-align:right}
+td{padding:4px 7px;border-bottom:1px solid #1e2533;font-size:11px;color:#cbd5e1}
+tr:last-child td{border-bottom:none}
+tr.tot td{font-weight:500;background:#1a1f2e}
+.bom-hdr{font-size:11px;font-weight:600;text-align:center;padding:6px;background:#252d3d;border-bottom:1px solid #2d3748;color:#93c5fd;letter-spacing:.04em}
+.hint{font-size:9px;color:#64748b;margin-top:2px}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#14532d;border:1px solid #16a34a;color:#bbf7d0;padding:8px 16px;border-radius:6px;font-size:12px;z-index:99;display:none}
+.toast.on{display:block}
+h1.app-title{font-size:13px;font-weight:700;color:#93c5fd;letter-spacing:.06em;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #2d3748}
+.lifter-ok{color:#4ade80}.lifter-fail{color:#f87171}
+.lft-tbl{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+.lft-tbl th{background:#1a1f2e;padding:4px 6px;text-align:left;font-size:10px;color:#94a3b8;border-bottom:1px solid #2d3748}
+.lft-tbl td{padding:3px 6px;border-bottom:1px solid #1e2533;color:#cbd5e1}
+.lft-tbl tr:last-child td{border-bottom:none}
+</style>
+</head>
+<body>
+
+<div class="app">
+<div class="panel">
+  <h1 class="app-title">TOP SLAB — REBAR DESIGNER</h1>
+
+  <div class="sh">Slab</div>
+  <div class="r3">
+    <div class="field"><label>Length (ft)</label><input type="number" id="slabL" value="14" min="1" step="0.5"></div>
+    <div class="field"><label>Width (ft)</label><input type="number" id="slabW" value="11" min="1" step="0.5"></div>
+    <div class="field"><label>Thick (in)</label><input type="number" id="slabT" value="10" min="4" step="0.5"></div>
+  </div>
+  <div class="r3">
+    <div class="field"><label>Wall t. (in)</label><input type="number" id="wallT" value="8" min="2" step="1"></div>
+    <div class="field"><label>Cover top (in)</label><input type="number" id="covTop" value="2" min="0.75" step="0.25"></div>
+    <div class="field"><label>Cover bot (in)</label><input type="number" id="covBot" value="1.5" min="0.75" step="0.25"></div>
+  </div>
+  <div class="r2">
+    <div class="field"><label>Edge clear (in)</label><input type="number" id="edgeCl" value="2" min="0" step="0.25"><div class="hint">Bar offset from slab edge</div></div>
+    <div class="field"><label>Trim ext. (in)</label><input type="number" id="trimExt" value="12" min="3" step="1"></div>
+  </div>
+
+  <hr>
+  <div class="sh">Mats</div>
+  <div class="seg-row">
+    <div class="seg on" id="seg1" onclick="setMats(1)">Single (bottom)</div>
+    <div class="seg" id="seg2" onclick="setMats(2)">Two mats</div>
+  </div>
+
+  <div class="matcard">
+    <div style="font-size:10px;font-weight:600;color:#f97316;margin-bottom:5px">▼ BOTTOM MAT</div>
+    <div class="r2">
+      <div class="field"><label>Bar X-dir</label><select id="bBarX"><option value="3">#3</option><option value="4">#4</option><option value="5">#5</option><option value="6" selected>#6</option><option value="7">#7</option><option value="8">#8</option></select></div>
+      <div class="field"><label>Spc X (in)</label><input type="number" id="bSpcX" value="12" min="1" step="0.5"></div>
+    </div>
+    <div class="r2">
+      <div class="field"><label>Bar Y-dir</label><select id="bBarY"><option value="3">#3</option><option value="4">#4</option><option value="5">#5</option><option value="6" selected>#6</option><option value="7">#7</option><option value="8">#8</option></select></div>
+      <div class="field"><label>Spc Y (in)</label><input type="number" id="bSpcY" value="12" min="1" step="0.5"></div>
+    </div>
+  </div>
+
+  <div class="matcard" id="topMatCard" style="display:none">
+    <div style="font-size:10px;font-weight:600;color:#60a5fa;margin-bottom:5px">▲ TOP MAT</div>
+    <div class="r2">
+      <div class="field"><label>Bar X-dir</label><select id="tBarX"><option value="3">#3</option><option value="4">#4</option><option value="5">#5</option><option value="6" selected>#6</option><option value="7">#7</option><option value="8">#8</option></select></div>
+      <div class="field"><label>Spc X (in)</label><input type="number" id="tSpcX" value="12" min="1" step="0.5"></div>
+    </div>
+    <div class="r2">
+      <div class="field"><label>Bar Y-dir</label><select id="tBarY"><option value="3">#3</option><option value="4">#4</option><option value="5">#5</option><option value="6" selected>#6</option><option value="7">#7</option><option value="8">#8</option></select></div>
+      <div class="field"><label>Spc Y (in)</label><input type="number" id="tSpcY" value="12" min="1" step="0.5"></div>
+    </div>
+  </div>
+
+  <div class="r2">
+    <div class="field"><label>Trim bar</label><select id="barTrim"><option value="3">#3</option><option value="4" selected>#4</option><option value="5">#5</option><option value="6">#6</option></select></div>
+    <div class="field"></div>
+  </div>
+
+  <hr>
+  <div class="sh">Openings</div>
+  <div id="errMsg" class="errmsg"></div>
+  <div id="warnMsg" class="warnmsg"></div>
+  <div id="openingsList"></div>
+  <button class="btn" style="width:100%;margin-bottom:5px" onclick="addOpening()">+ Add opening</button>
+  <button class="btn-primary" onclick="tryDraw()">&#9654; Draw slab</button>
+
+  <hr>
+  <div class="sh">Lifters</div>
+  <div class="r2">
+    <div class="field"><label>No. of lifters</label>
+      <select id="lftN"><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option><option value="8">8</option></select>
+    </div>
+    <div class="field"><label>Lifter type</label>
+      <select id="lftType"><option value="Coil">Coil insert</option><option value="Ferrule">Ferrule insert</option><option value="Loop">Loop insert</option><option value="PL">Plate loop</option></select>
+    </div>
+  </div>
+  <div class="r2">
+    <div class="field"><label>Capacity each (tons)</label><input type="number" id="lftCap" value="5" min="0.5" step="0.5"></div>
+    <div class="field"><label>Factor of safety</label><input type="number" id="lftFS" value="4" min="1" step="0.5"></div>
+  </div>
+  <div class="r2">
+    <div class="field"><label>Edge clear (in)</label><input type="number" id="lftEdge" value="12" min="3" step="1"><div class="hint">Min dist from slab edge</div></div>
+    <div class="field"><label>Opng clear (in)</label><input type="number" id="lftOpngClr" value="6" min="2" step="1"><div class="hint">Min dist from opening</div></div>
+  </div>
+  <div id="lftResult" style="margin-top:4px;font-size:10px;color:#64748b"></div>
+</div>
+
+<div class="rhs">
+  <div class="stats">
+    <div class="stat"><div class="stat-l">X bars</div><div class="stat-v" id="stX">—</div></div>
+    <div class="stat"><div class="stat-l">Y bars</div><div class="stat-v" id="stY">—</div></div>
+    <div class="stat"><div class="stat-l">Add'l bars</div><div class="stat-v" id="stA">—</div></div>
+    <div class="stat"><div class="stat-l">Trim bars</div><div class="stat-v" id="stT">—</div></div>
+    <div class="stat"><div class="stat-l">Net area</div><div class="stat-v" id="stArea">—</div></div>
+    <div class="stat"><div class="stat-l">CG x,y</div><div class="stat-v" id="stCG">—</div></div>
+    <div class="stat"><div class="stat-l">Slab wt</div><div class="stat-v" id="stWt">—</div></div>
+    <div class="stat"><div class="stat-l">Lifters</div><div class="stat-v" id="stLft">—</div></div>
+    <div class="stat"><div class="stat-l">Load/lifter</div><div class="stat-v" id="stLftLoad">—</div></div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" id="tabBot" onclick="setView('bot')">&#9660; Bottom mat</button>
+    <button class="tab" id="tabTop" onclick="setView('top')" style="display:none">&#9650; Top mat</button>
+    <button class="tab" id="tabSecL" onclick="setView('secL')">Section // Length</button>
+    <button class="tab" id="tabSecW" onclick="setView('secW')">Section // Width</button>
+  </div>
+  <canvas id="cv"></canvas>
+  <div style="display:flex;gap:6px">
+    <button class="btn" style="flex:1" onclick="exportPDF()">&#8595; Export PDF</button>
+    <button class="btn" style="flex:1" onclick="exportDXF()">&#8595; Export DXF</button>
+  </div>
+  <div id="bomTable"></div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const BAR_DIA={3:.375,4:.5,5:.625,6:.75,7:.875,8:1.0};
+const BAR_WT ={3:.376,4:.668,5:1.043,6:1.502,7:2.044,8:2.670};
+const CONC_PCF=150;
+const frac=v=>{const neg=v<0;v=Math.abs(v);const ft=Math.floor(v),i=Math.round((v-ft)*12);if(i===12)return(neg?'-':'')+(ft+1)+"'-0\"";return(neg?'-':'')+ft+"'-"+i+'"';};
+
+let openings=[],oid=0,numMats=1,view='bot';
+let PRINT=false,lastRows=[];
+
+const D={bg:'#1e2533',slab:'#e2e8f0',wall:'#6b7280',conc:'#263040',concHatch:'#3a4a5a',
+  botBar:'#f97316',topBar:'#60a5fa',addl:'#38bdf8',trim:'#34d399',open:'#ef4444',
+  edge:'#f59e0b',text:'#94a3b8',dim:'#fbbf24',covLine:'#4ade80',cg:'#ff00ff',bg2:'#111827',
+  lft:'#e879f9',lftOk:'#4ade80',lftFail:'#f87171'};
+const LP={bg:'#ffffff',slab:'#111',wall:'#555',conc:'#dde3e8',concHatch:'#b0b8c4',
+  botBar:'#c2410c',topBar:'#1d4ed8',addl:'#0369a1',trim:'#047857',open:'#b91c1c',
+  edge:'#b45309',text:'#333',dim:'#92400e',covLine:'#15803d',cg:'#b000b0',bg2:'#e5e7eb',
+  lft:'#7e22ce',lftOk:'#15803d',lftFail:'#b91c1c'};
+const P=k=>(PRINT?LP:D)[k];
+
+function gp(){return{
+  L:+document.getElementById('slabL').value||14,W:+document.getElementById('slabW').value||11,
+  Tin:+document.getElementById('slabT').value||10,wallIn:+document.getElementById('wallT').value||8,
+  covTopIn:+document.getElementById('covTop').value||2,covBotIn:+document.getElementById('covBot').value||1.5,
+  ecIn:+document.getElementById('edgeCl').value||2,extIn:+document.getElementById('trimExt').value||12,
+  bBarX:+document.getElementById('bBarX').value||6,bBarY:+document.getElementById('bBarY').value||6,
+  bSpcX:+document.getElementById('bSpcX').value||12,bSpcY:+document.getElementById('bSpcY').value||12,
+  tBarX:+document.getElementById('tBarX').value||6,tBarY:+document.getElementById('tBarY').value||6,
+  tSpcX:+document.getElementById('tSpcX').value||12,tSpcY:+document.getElementById('tSpcY').value||12,
+  barTrim:+document.getElementById('barTrim').value||4,
+  lftN:+document.getElementById('lftN').value||4,
+  lftType:document.getElementById('lftType').value||'Coil',
+  lftCap:+document.getElementById('lftCap').value||5,
+  lftFS:+document.getElementById('lftFS').value||4,
+  lftEdge:(+document.getElementById('lftEdge').value||12)/12,
+  lftOpngClr:(+document.getElementById('lftOpngClr').value||6)/12,
+  lftEdgeIn:+document.getElementById('lftEdge').value||12,
+  lftOpngClrIn:+document.getElementById('lftOpngClr').value||6};}
+
+function setMats(n){numMats=n;
+  document.getElementById('seg1').className='seg'+(n===1?' on':'');
+  document.getElementById('seg2').className='seg'+(n===2?' on':'');
+  document.getElementById('topMatCard').style.display=n===2?'block':'none';
+  document.getElementById('tabTop').style.display=n===2?'':'none';
+  if(n===1&&view==='top')setView('bot');}
+function setView(v){view=v;
+  ['bot','top','secL','secW'].forEach(k=>{const el=document.getElementById('tab'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.className='tab'+(v===k?' on':'');});
+  draw();}
+
+function getOR(o){
+  if(o.type==='circ'){const r=+o.dia/2,cx=+o.cx,cy=+o.cy;return{x1:cx-r,y1:cy-r,x2:cx+r,y2:cy+r,cx,cy,r,isCirc:true,id:o.id};}
+  const hw=+o.w/2,hh=+o.h/2,cx=+o.cx,cy=+o.cy;return{x1:cx-hw,y1:cy-hh,x2:cx+hw,y2:cy+hh,cx,cy,hw,hh,isCirc:false,id:o.id};}
+function addOpening(){openings.push({id:++oid,type:'circ',cx:4,cy:3,dia:2.5,w:2,h:2});renderOpenings();}
+function removeOpening(id){openings=openings.filter(o=>o.id!==id);renderOpenings();}
+function setOType(id,v){const o=openings.find(x=>x.id===id);if(o){o.type=v;renderOpenings();}}
+function setOVal(id,k,v){const o=openings.find(x=>x.id===id);if(o)o[k]=+v;}
+function renderOpenings(){
+  document.getElementById('openingsList').innerHTML=openings.map(o=>`
+  <div class="ocard" id="oc${o.id}">
+    <div class="ohdr">Opening ${o.id}<button class="btn-sm" onclick="removeOpening(${o.id})">&#x2715;</button></div>
+    <div class="r2">
+      <div class="field"><label>Shape</label><select onchange="setOType(${o.id},this.value)"><option value="circ" ${o.type==='circ'?'selected':''}>Circular</option><option value="rect" ${o.type==='rect'?'selected':''}>Rect</option></select></div>
+      <div class="field"><label>Cx (ft)</label><input type="number" value="${o.cx}" step="0.25" oninput="setOVal(${o.id},'cx',this.value)"></div>
+    </div>
+    <div class="r2">
+      <div class="field"><label>Cy (ft)</label><input type="number" value="${o.cy}" step="0.25" oninput="setOVal(${o.id},'cy',this.value)"></div>
+      ${o.type==='circ'?`<div class="field"><label>Dia (ft)</label><input type="number" value="${o.dia}" step="0.25" oninput="setOVal(${o.id},'dia',this.value)"></div>`:`<div class="field"><label>W (ft)</label><input type="number" value="${o.w}" step="0.25" oninput="setOVal(${o.id},'w',this.value)"></div>`}
+    </div>
+    ${o.type==='rect'?`<div class="r2"><div class="field"><label>H (ft)</label><input type="number" value="${o.h}" step="0.25" oninput="setOVal(${o.id},'h',this.value)"></div><div></div></div>`:''}
+  </div>`).join('');
+}
+
+function validate(){
+  const p=gp(),ors=openings.map(getOR),wFt=p.wallIn/12,errs=[];
+  for(const o of ors)if(o.x1<wFt||o.y1<wFt||o.x2>p.L-wFt||o.y2>p.W-wFt)errs.push(`Opening ${o.id} outside inside clear (${frac(p.L-2*wFt)} x ${frac(p.W-2*wFt)})`);
+  for(let i=0;i<ors.length;i++)for(let j=i+1;j<ors.length;j++){
+    const a=ors[i],b=ors[j];const gx=Math.max(0,Math.max(a.x1,b.x1)-Math.min(a.x2,b.x2)),gy=Math.max(0,Math.max(a.y1,b.y1)-Math.min(a.y2,b.y2));
+    const cl=gx>0&&gy>0?Math.sqrt(gx*gx+gy*gy):(gx||gy);
+    if(cl<0.5)errs.push(`Openings ${a.id} & ${b.id}: clearance < 6"`);}
+  return errs;
+}
+function tryDraw(){
+  const errs=validate(),em=document.getElementById('errMsg');
+  if(errs.length){em.innerHTML='<b>&#x26A0;</b> '+errs.join('<br>');em.className='errmsg on';return;}
+  em.className='errmsg';draw();
+}
+
+function clipSeg(pos,isH,or_){
+  const c=2/12;
+  if(or_.isCirc){const{cx,cy,r}=or_;
+    if(isH){if(pos<cy-r||pos>cy+r)return null;const d=Math.sqrt(Math.max(0,r*r-(pos-cy)**2));return{lo:cx-d-c,hi:cx+d+c};}
+    else{if(pos<cx-r||pos>cx+r)return null;const d=Math.sqrt(Math.max(0,r*r-(pos-cx)**2));return{lo:cy-d-c,hi:cy+d+c};}}
+  if(isH){if(pos<or_.y1||pos>or_.y2)return null;return{lo:or_.x1-c,hi:or_.x2+c};}
+  else{if(pos<or_.x1||pos>or_.x2)return null;return{lo:or_.y1-c,hi:or_.y2+c};}
+}
+function diamond(or_){const{cx,cy}=or_,cl=2/12;const Rin=or_.isCirc?or_.r+cl:(or_.hw+or_.hh)/Math.SQRT2+cl;const Dg=Rin*Math.SQRT2;return[[cx,cy-Dg],[cx+Dg,cy],[cx,cy+Dg],[cx-Dg,cy]];}
+
+function slabProps(p,ors){
+  const grossA=p.L*p.W;
+  let netA=grossA,mx=grossA*p.L/2,my=grossA*p.W/2,openA=0;
+  for(const o of ors){
+    const a=o.isCirc?Math.PI*o.r*o.r:(o.x2-o.x1)*(o.y2-o.y1);
+    openA+=a;netA-=a;mx-=a*o.cx;my-=a*o.cy;
+  }
+  if(netA<=0)return{grossA,openA,netA:0,cx:p.L/2,cy:p.W/2,vol:0,wt:0,pcf:CONC_PCF};
+  const cx=mx/netA,cy=my/netA,vol=netA*(p.Tin/12),wt=vol*CONC_PCF;
+  return{grossA,openA,netA,cx,cy,vol,wt,pcf:CONC_PCF};
+}
+function kips(lb){return (lb/1000).toFixed(2)+'k';}
+
+/* ── LIFTER PLACEMENT ────────────────────────────────────────────────────
+   Places n lifters symmetrically around the slab CG.
+   Arrangement patterns:
+     n=2 → 1 row, 2 cols (left/right of CG)
+     n=4 → 2×2 grid
+     n=6 → 2×3 grid
+     n=8 → 2×4 grid
+   Each candidate position is checked against:
+     • edge clear distance from all 4 slab edges
+     • minimum clearance from every opening
+   If a candidate fails, it is nudged inward symmetrically.
+   Capacity check: each lifter must carry ≤ allowable load.
+     allowable = lftCap (tons) / FS × 2000 lb
+     actual per lifter = slab wt / n  (simple equal-share assumption)
+────────────────────────────────────────────────────────────────────────── */
+function computeLifters(p,ors,sp){
+  const{L,W,lftN,lftCap,lftFS,lftEdge,lftOpngClr,lftType}=p;
+  const cgx=sp.cx,cgy=sp.cy;
+  const allowLb=lftCap*2000/lftFS;           // allowable load per lifter (lb)
+  const loadPerLft=sp.wt/lftN;               // actual load per lifter (lb)
+  const ok=loadPerLft<=allowLb;
+
+  // Build symmetric grid of candidates around CG
+  // rows × cols based on n
+  let rows,cols;
+  if(lftN===2){rows=1;cols=2;}
+  else if(lftN===6){rows=2;cols=3;}
+  else if(lftN===8){rows=2;cols=4;}
+  else{rows=2;cols=2;}  // default 4
+
+  // spacing between lifters — start at a fraction of the slab then shrink if needed
+  // X-spacing: spread cols symmetrically around cgx
+  // Y-spacing: spread rows symmetrically around cgy
+  const minEdge=lftEdge;
+  const xBand=Math.max(0,L-2*minEdge);
+  const yBand=Math.max(0,W-2*minEdge);
+
+  // Desired spacing: divide band into (cols-1) intervals; for 1 col centred
+  const xSpan=cols>1?(Math.min(xBand*0.85,(cols-1)*L/(cols+1))):0;
+  const ySpan=rows>1?(Math.min(yBand*0.85,(rows-1)*W/(rows+1))):0;
+  const xStep=cols>1?xSpan/(cols-1):0;
+  const yStep=rows>1?ySpan/(rows-1):0;
+
+  // Anchor the grid to the CG
+  const x0=cgx-(cols-1)*xStep/2;
+  const y0=cgy-(rows-1)*yStep/2;
+
+  const pts=[];
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      let x=x0+c*xStep;
+      let y=y0+r*yStep;
+      // clamp to edge clear band
+      x=Math.max(minEdge,Math.min(L-minEdge,x));
+      y=Math.max(minEdge,Math.min(W-minEdge,y));
+      // push away from openings
+      for(const or_ of ors){
+        const dx=x-or_.cx,dy=y-or_.cy;
+        let minR;
+        if(or_.isCirc){minR=or_.r+lftOpngClr;}
+        else{minR=Math.sqrt((or_.hw+lftOpngClr)**2+(or_.hh+lftOpngClr)**2);}
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<minR&&dist>1e-6){
+          const scale=minR/dist;
+          x=or_.cx+dx*scale;y=or_.cy+dy*scale;
+          // re-clamp
+          x=Math.max(minEdge,Math.min(L-minEdge,x));
+          y=Math.max(minEdge,Math.min(W-minEdge,y));
+        }
+      }
+      pts.push({x,y,id:pts.length+1});
+    }
+  }
+
+  // Compute actual resultant offset from CG (quality indicator)
+  const rx=pts.reduce((s,pt)=>s+pt.x,0)/pts.length-cgx;
+  const ry=pts.reduce((s,pt)=>s+pt.y,0)/pts.length-cgy;
+  const offset=Math.sqrt(rx*rx+ry*ry);
+
+  return{pts,allowLb,loadPerLft,ok,lftType,lftN,lftCap,lftFS,offset};
+}
+
+
+/* ── Additional bar placement: total always = interrupted count when slab geometry allows it.
+   Existing main-bar lines are NOT treated as unavailable, because add'l bars
+   may be bundled/offset beside the regular bars.  When a selected location
+   coincides with a main bar, it is nudged slightly outward for plan/PDF/DXF
+   visibility while still being counted as the required replacement bar. ── */
+function placeAddl(need,near1,near2,spc,lo,hi,occupied){
+  if(need<=0)return[];
+  const eps=1e-6;
+  const occ=new Set(occupied.map(v=>Math.round(v*1000)));
+  const used=new Set();
+  const bundle=Math.min(spc*0.22,2/12);
+  const inRange=v=>v>=lo-eps&&v<=hi+eps;
+  const key=v=>Math.round(v*1000);
+  function fit(v,side){
+    if(!inRange(v))return null;
+    let c=v;
+    if(occ.has(key(c))){
+      const dir=side<0?-1:1;
+      if(inRange(c+dir*bundle))c+=dir*bundle;
+      else if(inRange(c-dir*bundle))c-=dir*bundle;
+    }
+    let k=key(c),n=1;
+    while(used.has(k)&&n<8){
+      const delta=bundle*n*(side<0?-1:1);
+      if(inRange(c+delta)){c+=delta;k=key(c);break;}
+      if(inRange(c-delta)){c-=delta;k=key(c);break;}
+      n++;
+    }
+    if(used.has(key(c)))return null;
+    used.add(key(c));
+    return c;
+  }
+  const out=[];let p1=near1,p2=near2;
+  while(out.length<need&&(p1>=lo-eps||p2<=hi+eps)){
+    if(p1>=lo-eps&&out.length<need){const v=fit(p1,-1);p1-=spc;if(v!==null)out.push(v);}
+    if(p2<=hi+eps&&out.length<need){const v=fit(p2,1);p2+=spc;if(v!==null)out.push(v);}
+  }
+  return out;
+}
+
+function planData(p,ors,mat){
+  const iB=mat==='bot';
+  const spcXft=(iB?p.bSpcX:p.tSpcX)/12,spcYft=(iB?p.bSpcY:p.tSpcY)/12;
+  const spcXin=iB?p.bSpcX:p.tSpcX,spcYin=iB?p.bSpcY:p.tSpcY;
+  const barXn=iB?p.bBarX:p.tBarX,barYn=iB?p.bBarY:p.tBarY;
+  const{L,W,ecIn,extIn}=p,ec=ecIn/12,ext=extIn/12;
+  const blx=Math.max(0,L-2*ec),bly=Math.max(0,W-2*ec);
+  const xBars=[],yBars=[];
+  for(let yp=spcYft/2;yp<=W+0.001;yp+=spcYft){if(yp<0||yp>W)continue;xBars.push({pos:yp,clips:ors.map(o=>clipSeg(yp,true,o)).filter(Boolean)});}
+  for(let xp=spcXft/2;xp<=L+0.001;xp+=spcXft){if(xp<0||xp>L)continue;yBars.push({pos:xp,clips:ors.map(o=>clipSeg(xp,false,o)).filter(Boolean)});}
+  const mainX=xBars.map(b=>b.pos),mainY=yBars.map(b=>b.pos);
+  const rows=[];let mk=iB?100:200;const nm=()=>++mk;
+  const mX=nm(),mY=nm();
+  rows.push({mark:mX,size:'#'+barYn,qty:xBars.length,type:'STRAIGHT',len:blx,totalLF:xBars.length*blx,wt:BAR_WT[barYn],note:`@${spcYin}" X-dir${iB?' BOT':' TOP'}`});
+  rows.push({mark:mY,size:'#'+barXn,qty:yBars.length,type:'STRAIGHT',len:bly,totalLF:yBars.length*bly,wt:BAR_WT[barXn],note:`@${spcXin}" Y-dir${iB?' BOT':' TOP'}`});
+  let addCnt=0,trimCnt=0;const extras=[],warns=[];
+  for(const or_ of ors){
+    const intX=xBars.filter(b=>clipSeg(b.pos,true,or_)).length;
+    const intY=yBars.filter(b=>clipSeg(b.pos,false,or_)).length;
+    const addXpos=placeAddl(intX,or_.y1-spcYft,or_.y2+spcYft,spcYft,ec,W-ec,mainX);
+    const addYpos=placeAddl(intY,or_.x1-spcXft,or_.x2+spcXft,spcXft,ec,L-ec,mainY);
+    const addXn=addXpos.length,addYn=addYpos.length;
+    if(intX>0&&addXn<intX)warns.push(`O${or_.id}: ${intX} X-bars interrupted, only ${addXn} add'l fit (slab full)`);
+    if(intY>0&&addYn<intY)warns.push(`O${or_.id}: ${intY} Y-bars interrupted, only ${addYn} add'l fit (slab full)`);
+    const mAX=intX>0?nm():null,mAY=intY>0?nm():null,mTrim=nm();
+    let tLen=0;const verts=diamond(or_);const sides=[[verts[3],verts[0]],[verts[0],verts[1]],[verts[1],verts[2]],[verts[2],verts[3]]];
+    for(const[va,vb]of sides){const dx=vb[0]-va[0],dy=vb[1]-va[1],sl=Math.sqrt(dx*dx+dy*dy);if(sl>.001)tLen+=sl+2*ext;}
+    if(mAX){rows.push({mark:mAX,size:'#'+barYn,qty:addXn,type:'STRAIGHT',len:blx,totalLF:addXn*blx,wt:BAR_WT[barYn],note:`Add'l X O${or_.id} (=${intX} int)`});addCnt+=addXn;}
+    if(mAY){rows.push({mark:mAY,size:'#'+barXn,qty:addYn,type:'STRAIGHT',len:bly,totalLF:addYn*bly,wt:BAR_WT[barXn],note:`Add'l Y O${or_.id} (=${intY} int)`});addCnt+=addYn;}
+    rows.push({mark:mTrim,size:'#'+p.barTrim,qty:4,type:'45 TRIM',len:+(tLen/4).toFixed(2),totalLF:+tLen.toFixed(2),wt:BAR_WT[p.barTrim],note:`2"clr O${or_.id}`});
+    trimCnt+=4;
+    extras.push({or_,addXpos,addYpos,intX,intY,addXn,addYn,mAX,mAY,mTrim});
+  }
+  return{rows,xBars,yBars,extras,addCnt,trimCnt,warns,xCnt:xBars.filter(b=>!b.clips.length).length,yCnt:yBars.filter(b=>!b.clips.length).length,mX,mY,spcXin,spcYin,barXn,barYn,blx,bly,iB};
+}
+
+/* ── Draw lifters on canvas plan view ── */
+function drawLiftersOnCanvas(ctx,tx,ty,sc,lft,p){
+  const R=Math.max(7,Math.min(14,sc*0.35));
+  lft.pts.forEach((pt,i)=>{
+    const cx=tx(pt.x),cy=ty(pt.y);
+    const col=lft.ok?P('lftOk'):P('lftFail');
+    // knockout ring
+    ctx.save();
+    ctx.strokeStyle=PRINT?'#ffffff':'#000000';ctx.lineWidth=4;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,2*Math.PI);ctx.stroke();
+    ctx.strokeStyle=col;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,2*Math.PI);ctx.stroke();
+    // cross
+    ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.moveTo(cx-R+2,cy);ctx.lineTo(cx+R-2,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy-R+2);ctx.lineTo(cx,cy+R-2);ctx.stroke();
+    // label
+    ctx.fillStyle=col;ctx.font='bold 7px sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText('L'+(i+1),cx,cy+R+2);
+    ctx.restore();
+  });
+  // capacity check label
+  const loadT=(lft.loadPerLft/2000).toFixed(2);
+  const allowT=(lft.allowLb/2000).toFixed(2);
+  const chkTxt=`${lft.lftType} lifter  ${lft.lftN}×${lft.lftCap}t  FS=${lft.lftFS}  ${loadT}t/ea (allow ${allowT}t)  `+(lft.ok?'OK':'OVER');
+  const chkCol=lft.ok?P('lftOk'):P('lftFail');
+  ctx.save();ctx.font='bold 8px sans-serif';ctx.fillStyle=chkCol;ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillText(chkTxt,tx(0),ty(p.W)+32);
+  ctx.restore();
+}
+
+function drawPlan(cv,ctx,p,ors,mat){
+  const d=planData(p,ors,mat);
+  const iB=d.iB,bColor=iB?P('botBar'):P('topBar');
+  const{L,W,wallIn,ecIn}=p,wFt=wallIn/12,ec=ecIn/12,ext=p.extIn/12;
+  const spcXft=(iB?p.bSpcX:p.tSpcX)/12,spcYft=(iB?p.bSpcY:p.tSpcY)/12;
+  const PAD=56,CW=650,CH=500;
+  cv.width=CW*2;cv.height=CH*2;cv.style.width=CW+'px';cv.style.height=CH+'px';
+  ctx.scale(2,2);ctx.fillStyle=P('bg');ctx.fillRect(0,0,CW,CH);
+  const sc=Math.min((CW-2*PAD)/L,(CH-2*PAD)/W);
+  const ox=PAD+((CW-2*PAD)-L*sc)/2,oy=PAD+((CH-2*PAD)-W*sc)/2;
+  const tx=x=>ox+x*sc,ty=y=>oy+y*sc;
+  ctx.save();ctx.beginPath();ctx.rect(tx(0),ty(0),L*sc,W*sc);ctx.clip();
+  for(const b of d.xBars){
+    const clips=b.clips.slice().sort((a,c)=>a.lo-c.lo);let cur=ec,segs=[];
+    for(const c of clips){if(c.lo>cur)segs.push([cur,Math.min(c.lo,L-ec)]);cur=Math.max(cur,c.hi);}
+    if(cur<L-ec)segs.push([cur,L-ec]);
+    ctx.strokeStyle=bColor;ctx.lineWidth=0.85;
+    for(const[s,e]of segs)if(e>s){ctx.beginPath();ctx.moveTo(tx(s),ty(b.pos));ctx.lineTo(tx(e),ty(b.pos));ctx.stroke();}}
+  for(const b of d.yBars){
+    const clips=b.clips.slice().sort((a,c)=>a.lo-c.lo);let cur=ec,segs=[];
+    for(const c of clips){if(c.lo>cur)segs.push([cur,Math.min(c.lo,W-ec)]);cur=Math.max(cur,c.hi);}
+    if(cur<W-ec)segs.push([cur,W-ec]);
+    ctx.strokeStyle=bColor;ctx.lineWidth=0.85;
+    for(const[s,e]of segs)if(e>s){ctx.beginPath();ctx.moveTo(tx(b.pos),ty(s));ctx.lineTo(tx(b.pos),ty(e));ctx.stroke();}}
+  for(const ex of d.extras){
+    ctx.setLineDash([6,4]);ctx.strokeStyle=P('addl');ctx.lineWidth=1.1;
+    for(const ya of ex.addXpos){ctx.beginPath();ctx.moveTo(tx(ec),ty(ya));ctx.lineTo(tx(L-ec),ty(ya));ctx.stroke();}
+    for(const xa of ex.addYpos){ctx.beginPath();ctx.moveTo(tx(xa),ty(ec));ctx.lineTo(tx(xa),ty(W-ec));ctx.stroke();}
+    ctx.setLineDash([]);
+    const verts=diamond(ex.or_),sides=[[verts[3],verts[0]],[verts[0],verts[1]],[verts[1],verts[2]],[verts[2],verts[3]]];
+    ctx.strokeStyle=P('trim');ctx.lineWidth=2.5;
+    for(const[va,vb]of sides){const dx=vb[0]-va[0],dy=vb[1]-va[1],sl=Math.sqrt(dx*dx+dy*dy);if(sl<.001)continue;
+      const ux=dx/sl,uy=dy/sl;ctx.beginPath();ctx.moveTo(tx(va[0]-ux*ext),ty(va[1]-uy*ext));ctx.lineTo(tx(vb[0]+ux*ext),ty(vb[1]+uy*ext));ctx.stroke();}
+  }
+  ctx.restore();
+  function callout(bx,by,m1,m2,ldx,ldy){
+    const px=tx(bx),py=ty(by),lx=px+ldx,ly=py+ldy,tail=lx+(ldx>=0?34:-34);
+    ctx.fillStyle=P('text');ctx.beginPath();ctx.arc(px,py,2.2,0,2*Math.PI);ctx.fill();
+    ctx.strokeStyle=P('text');ctx.lineWidth=0.7;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(lx,ly);ctx.lineTo(tail,ly);ctx.stroke();
+    ctx.textAlign=ldx>=0?'left':'right';const ax=ldx>=0?lx+2:lx-2;
+    ctx.font='bold 8px sans-serif';ctx.fillStyle=P('text');ctx.textBaseline='bottom';ctx.fillText(m1,ax,ly-1);
+    ctx.font='7px sans-serif';ctx.textBaseline='top';ctx.fillStyle=P('dim');ctx.fillText(m2,ax,ly+1);
+  }
+  const xMB=d.xBars.find(b=>b.pos>W*.6&&!b.clips.length);
+  if(xMB)callout(L-ec,xMB.pos,`${d.mX}--#${d.barYn}`,`@${d.spcYin}" ${iB?'BOT':'TOP'}`,46,-18);
+  const yMB=d.yBars.find(b=>b.pos>L*.6&&!b.clips.length);
+  if(yMB)callout(yMB.pos,ec,`${d.mY}--#${d.barXn}`,`@${d.spcXin}" ${iB?'BOT':'TOP'}`,44,-22);
+  for(const ex of d.extras){
+    if(ex.mAX&&ex.addXpos.length){callout(L-ec,ex.addXpos[0],`${ex.mAX}--#${d.barYn}`,`${ex.addXn} ADD'L (=${ex.intX} int)`,48,22);}
+    if(ex.mAY&&ex.addYpos.length){callout(ex.addYpos[0],ec,`${ex.mAY}--#${d.barXn}`,`${ex.addYn} ADD'L (=${ex.intY} int)`,-50,-22);}
+    const v=diamond(ex.or_);callout((v[0][0]+v[1][0])/2,(v[0][1]+v[1][1])/2,`${ex.mTrim}--#${p.barTrim}`,'TRIM',50,-24);
+  }
+  ctx.strokeStyle=P('slab');ctx.lineWidth=2.5;ctx.strokeRect(tx(0),ty(0),L*sc,W*sc);
+  ctx.strokeStyle=P('wall');ctx.lineWidth=1;ctx.setLineDash([6,5]);
+  ctx.strokeRect(tx(wFt),ty(wFt),(L-2*wFt)*sc,(W-2*wFt)*sc);ctx.setLineDash([]);
+  if(ec>0){ctx.strokeStyle=P('edge');ctx.lineWidth=0.7;ctx.setLineDash([4,4]);
+    [[ec,0,ec,W],[L-ec,0,L-ec,W],[0,ec,L,ec],[0,W-ec,L,W-ec]].forEach(([x1,y1,x2,y2])=>{ctx.beginPath();ctx.moveTo(tx(x1),ty(y1));ctx.lineTo(tx(x2),ty(y2));ctx.stroke();});
+    ctx.setLineDash([]);ctx.fillStyle=P('edge');ctx.font='8px sans-serif';ctx.textAlign='center';ctx.fillText(ecIn+'"',tx(ec/2),ty(0)-18);}
+  for(const or_ of ors){ctx.save();
+    if(or_.isCirc){ctx.beginPath();ctx.arc(tx(or_.cx),ty(or_.cy),or_.r*sc,0,2*Math.PI);ctx.fillStyle=P('bg2');ctx.fill();ctx.strokeStyle=P('open');ctx.lineWidth=1.5;ctx.stroke();}
+    else{const rw=(or_.x2-or_.x1)*sc,rh=(or_.y2-or_.y1)*sc;ctx.fillStyle=P('bg2');ctx.fillRect(tx(or_.x1),ty(or_.y1),rw,rh);ctx.strokeStyle=P('open');ctx.lineWidth=1.5;ctx.strokeRect(tx(or_.x1),ty(or_.y1),rw,rh);}
+    ctx.fillStyle=P('open');ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('O'+or_.id,tx(or_.cx),ty(or_.cy));ctx.restore();}
+  const sp=slabProps(p,ors),cgx=tx(sp.cx),cgy=ty(sp.cy);
+  ctx.save();
+  ctx.setLineDash([]);ctx.lineCap='round';
+  const cgR=11;
+  ctx.strokeStyle=PRINT?'#ffffff':'#000000';ctx.fillStyle=PRINT?'#ffffff':'#000000';ctx.lineWidth=5;
+  ctx.beginPath();ctx.arc(cgx,cgy,cgR,0,2*Math.PI);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cgx-cgR-7,cgy);ctx.lineTo(cgx+cgR+7,cgy);ctx.moveTo(cgx,cgy-cgR-7);ctx.lineTo(cgx,cgy+cgR+7);ctx.stroke();
+  ctx.strokeStyle=P('cg');ctx.fillStyle=P('cg');ctx.lineWidth=2.2;
+  ctx.beginPath();ctx.arc(cgx,cgy,cgR,0,2*Math.PI);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cgx-cgR-7,cgy);ctx.lineTo(cgx+cgR+7,cgy);ctx.moveTo(cgx,cgy-cgR-7);ctx.lineTo(cgx,cgy+cgR+7);ctx.stroke();
+  ctx.beginPath();ctx.arc(cgx,cgy,3.5,0,2*Math.PI);ctx.fill();
+  const l1='CG',l2='X='+frac(sp.cx)+'  Y='+frac(sp.cy),l3='WT='+kips(sp.wt)+' LB';
+  ctx.font='bold 10px sans-serif';
+  const labelW=Math.max(ctx.measureText(l1).width,ctx.measureText(l2).width,ctx.measureText(l3).width)+10;
+  let lx=cgx+18,ly=cgy-30;
+  if(lx+labelW>cv.width/2-8)lx=cgx-labelW-18;
+  if(ly<8)ly=cgy+18;
+  ctx.fillStyle=PRINT?'rgba(255,255,255,0.92)':'rgba(17,24,39,0.94)';
+  ctx.fillRect(lx-5,ly-3,labelW,42);
+  ctx.strokeStyle=P('cg');ctx.lineWidth=1.2;ctx.strokeRect(lx-5,ly-3,labelW,42);
+  ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle=P('cg');
+  ctx.font='bold 10px sans-serif';ctx.fillText(l1,lx,ly);
+  ctx.font='8px sans-serif';ctx.fillText(l2,lx,ly+14);ctx.fillText(l3,lx,ly+27);
+  ctx.restore();
+  ctx.fillStyle=P('text');ctx.font='10px sans-serif';ctx.textAlign='center';
+  ctx.fillText(frac(L),tx(L/2),ty(0)-30);
+  ctx.save();ctx.translate(tx(0)-26,ty(W/2));ctx.rotate(-Math.PI/2);ctx.fillText(frac(W),0,0);ctx.restore();
+  ctx.font='9px sans-serif';ctx.fillText('#'+d.barYn+' @'+d.spcYin+'" X-dir  L='+frac(d.blx),tx(L/2),ty(W)+18);
+  ctx.save();ctx.translate(tx(L)+22,ty(W/2));ctx.rotate(-Math.PI/2);ctx.fillText('#'+d.barXn+' @'+d.spcXin+'" Y-dir  L='+frac(d.bly),0,0);ctx.restore();
+  ctx.textAlign='right';ctx.fillStyle=iB?P('botBar'):P('topBar');ctx.font='bold 9px sans-serif';
+  ctx.fillText(iB?'BOTTOM MAT -- PLAN':'TOP MAT -- PLAN',tx(L)-4,ty(W)+18);
+  if(iB){document.getElementById('stX').textContent=d.xCnt;document.getElementById('stY').textContent=d.yCnt;document.getElementById('stA').textContent=d.addCnt;document.getElementById('stT').textContent=d.trimCnt;
+    document.getElementById('stArea').textContent=sp.netA.toFixed(1)+' sf';document.getElementById('stCG').textContent=frac(sp.cx)+', '+frac(sp.cy);document.getElementById('stWt').textContent=kips(sp.wt)+' lb';
+    const wm=document.getElementById('warnMsg');if(d.warns.length){wm.innerHTML=d.warns.join('<br>');wm.className='warnmsg on';}else wm.className='warnmsg';}
+
+  // Draw lifters (always shown on both mat views)
+  const lft=computeLifters(p,ors,sp);
+  drawLiftersOnCanvas(ctx,tx,ty,sc,lft,p);
+  // update lifter stats on bottom mat pass only
+  if(iB){
+    document.getElementById('stLft').textContent=lft.pts.length;
+    document.getElementById('stLftLoad').textContent=(lft.loadPerLft/2000).toFixed(2)+'t';
+    const res=document.getElementById('lftResult');
+    const loadT=(lft.loadPerLft/2000).toFixed(2),allowT=(lft.allowLb/2000).toFixed(2);
+    const offIn=(lft.offset*12).toFixed(1);
+    res.innerHTML=`<span class="${lft.ok?'lifter-ok':'lifter-fail'}">`
+      +`${lft.ok?'✓ OK — ':'⚠ OVER — '}${loadT}t per lifter (allow ${allowT}t)  CG offset ${offIn}"</span>`;
+  }
+  return d.rows;
+}
+
+function drawSection(cv,ctx,p,axis){
+  const{L,W,Tin,wallIn,covTopIn,covBotIn,ecIn}=p;
+  const span=axis==='L'?L:W,wFt=wallIn/12,ec=ecIn/12,Tft=Tin/12;
+  const bCircBar=axis==='L'?p.bBarX:p.bBarY,bCircSpc=(axis==='L'?p.bSpcX:p.bSpcY)/12;
+  const bLineBar=axis==='L'?p.bBarY:p.bBarX,bLineLen=axis==='L'?(L-2*ec):(W-2*ec);
+  const tCircBar=axis==='L'?p.tBarX:p.tBarY,tCircSpc=(axis==='L'?p.tSpcX:p.tSpcY)/12;
+  const tLineBar=axis==='L'?p.tBarY:p.tBarX,tLineLen=axis==='L'?(L-2*ec):(W-2*ec);
+  const PAD_X=72,CW=660,CH=320;
+  cv.width=CW*2;cv.height=CH*2;cv.style.width=CW+'px';cv.style.height=CH+'px';
+  ctx.scale(2,2);ctx.fillStyle=P('bg');ctx.fillRect(0,0,CW,CH);
+  const scX=Math.min((CW-2*PAD_X)/span,60),sW=span*scX;
+  const scY=Math.min(200/Tft,scX*3),sH=Tft*scY;
+  const oX=(CW-sW)/2,oY=(CH-sH)/2+10;
+  ctx.fillStyle=P('conc');ctx.fillRect(oX,oY,sW,sH);
+  ctx.strokeStyle=P('slab');ctx.lineWidth=2;ctx.strokeRect(oX,oY,sW,sH);
+  function drawMat(circBar,circSpcFt,lineBar,lineLen,isTop,flipWidthStack){
+    const covIn=isTop?covTopIn:covBotIn,covFt=covIn/12;
+    const rCirc=Math.max(3,Math.min(8,(BAR_DIA[circBar]/12)*scY*0.5)),rLine=Math.max(2,Math.min(6,(BAR_DIA[lineBar]/12)*scY*0.5));
+    const col=isTop?P('topBar'):P('botBar');
+    let yCirc,yLine;
+    if(flipWidthStack){
+      if(!isTop){yLine=oY+sH-covFt*scY-rLine;yCirc=yLine-rLine-rCirc;}else{yLine=oY+covFt*scY+rLine;yCirc=yLine+rLine+rCirc;}
+    }else{
+      if(!isTop){yCirc=oY+sH-covFt*scY-rCirc;yLine=yCirc-rCirc-rLine;}else{yCirc=oY+covFt*scY+rCirc;yLine=yCirc+rCirc+rLine;}
+    }
+    ctx.fillStyle=col;ctx.strokeStyle=P('bg');ctx.lineWidth=0.8;const ecPx=ec*scX;
+    for(let cx=oX+circSpcFt/2*scX;cx<oX+sW;cx+=circSpcFt*scX){if(cx<oX+ecPx||cx>oX+sW-ecPx)continue;ctx.beginPath();ctx.arc(cx,yCirc,rCirc,0,2*Math.PI);ctx.fill();ctx.stroke();}
+    const lx1=oX+ec*scX,lx2=lx1+lineLen*scX;
+    ctx.strokeStyle=col;ctx.lineWidth=Math.max(2,rLine*1.3);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(lx1,yLine);ctx.lineTo(lx2,yLine);ctx.stroke();ctx.lineCap='butt';
+    ctx.fillStyle=col;ctx.font='7px sans-serif';ctx.textAlign='left';ctx.textBaseline=isTop?'top':'bottom';
+    ctx.fillText('#'+lineBar+' | L='+frac(lineLen),lx1,isTop?yLine+rLine+2:yLine-rLine-2);
+    ctx.textBaseline='middle';const fcx=oX+circSpcFt/2*scX;if(fcx>oX+ecPx)ctx.fillText('#'+circBar+' @ '+(circSpcFt*12).toFixed(0)+'"',fcx+rCirc+2,yCirc);
+    const dimX=isTop?oX-20:oX+sW+20,y1c=isTop?oY:oY+sH,y2c=isTop?yCirc-rCirc:yCirc+rCirc;
+    ctx.strokeStyle=col;ctx.lineWidth=0.8;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(dimX,y1c);ctx.lineTo(dimX,y2c);ctx.stroke();ctx.setLineDash([]);
+    ctx.beginPath();ctx.moveTo(dimX-3,y1c);ctx.lineTo(dimX+3,y1c);ctx.stroke();ctx.beginPath();ctx.moveTo(dimX-3,y2c);ctx.lineTo(dimX+3,y2c);ctx.stroke();
+    ctx.fillStyle=col;ctx.font='7px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.save();ctx.translate(isTop?dimX-10:dimX+10,(y1c+y2c)/2);ctx.rotate(-Math.PI/2);ctx.fillText(covIn+'"'+(isTop?' TOP':' BOT'),0,0);ctx.restore();
+  }
+  drawMat(bCircBar,bCircSpc,bLineBar,bLineLen,false,axis==='W');
+  if(numMats===2)drawMat(tCircBar,tCircSpc,tLineBar,tLineLen,true,axis==='W');
+  ctx.strokeStyle=P('dim');ctx.lineWidth=0.8;const tdx=oX+sW+(numMats===2?50:36);
+  ctx.beginPath();ctx.moveTo(tdx,oY);ctx.lineTo(tdx,oY+sH);ctx.stroke();ctx.beginPath();ctx.moveTo(tdx-3,oY);ctx.lineTo(tdx+3,oY);ctx.stroke();ctx.beginPath();ctx.moveTo(tdx-3,oY+sH);ctx.lineTo(tdx+3,oY+sH);ctx.stroke();
+  ctx.fillStyle=P('dim');ctx.font='bold 8px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('t='+Tin+'"',tdx+5,oY+sH/2);
+  ctx.strokeStyle=P('text');ctx.lineWidth=0.6;ctx.beginPath();ctx.moveTo(oX,oY-14);ctx.lineTo(oX+sW,oY-14);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(oX,oY-11);ctx.lineTo(oX,oY-17);ctx.stroke();ctx.beginPath();ctx.moveTo(oX+sW,oY-11);ctx.lineTo(oX+sW,oY-17);ctx.stroke();
+  ctx.fillStyle=P('text');ctx.font='9px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(frac(span),oX+sW/2,oY-15);
+  ctx.fillStyle=P('text');ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText(axis==='L'?'SECTION ALONG LENGTH  (X-dir=line, Y-dir=circles)':'SECTION ALONG WIDTH  (Y-dir=line, X-dir=circles)',CW/2,4);
+}
+
+function draw(){
+  const cv=document.getElementById('cv'),ctx=cv.getContext('2d');ctx.setTransform(1,0,0,1,0,0);
+  const p=gp(),ors=openings.map(getOR);
+  if(view==='bot'||view==='top'){lastRows=drawPlan(cv,ctx,p,ors,view==='top'?'top':'bot');renderBOM(lastRows);}
+  else drawSection(cv,ctx,p,view==='secL'?'L':'W');
+}
+
+function renderBOM(rows){
+  if(!rows.length){document.getElementById('bomTable').innerHTML='';return;}
+  const gLF=rows.reduce((s,r)=>s+r.totalLF,0),gWt=rows.reduce((s,r)=>s+r.totalLF*r.wt,0);
+  document.getElementById('bomTable').innerHTML=`<div class="tbl-wrap"><div class="bom-hdr">REBAR B.O.M.</div><table>
+  <thead><tr><th>Mark</th><th>Size</th><th>Qty</th><th>Type</th><th class="r">Length</th><th class="r">Total LF</th><th class="r">Wt lb</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td style="color:#93c5fd;font-weight:500">${r.mark}</td><td style="color:#fbbf24">${r.size}</td><td class="r">${r.qty}</td><td style="font-size:10px">${r.type}<br><span style="color:#64748b;font-size:9px">${r.note}</span></td><td class="r">${frac(r.len)}</td><td class="r">${r.totalLF.toFixed(1)}</td><td class="r">${(r.totalLF*r.wt).toFixed(0)}</td></tr>`).join('')}
+  <tr class="tot"><td colspan="5" style="text-align:right;color:#64748b;font-size:10px">TOTAL</td><td class="r">${gLF.toFixed(1)}</td><td class="r" style="color:#34d399">${gWt.toFixed(0)}</td></tr>
+  </tbody></table></div>`;
+}
+
+function exportPDF(){
+  PRINT=true;
+  const p=gp(),ors=openings.map(getOR);
+  const views=['bot',...(numMats===2?['top']:[]),'secL','secW'];
+  const labels=['Bottom mat - Plan',...(numMats===2?['Top mat - Plan']:[]),'Section // Length','Section // Width'];
+  const imgs=views.map(v=>{
+    const c=document.createElement('canvas'),x=c.getContext('2d');
+    x.setTransform(1,0,0,1,0,0);
+    if(v==='bot'||v==='top')drawPlan(c,x,p,ors,v);else drawSection(c,x,p,v==='secL'?'L':'W');
+    return c.toDataURL('image/png');
+  });
+  const cvT=document.createElement('canvas'),ctxT=cvT.getContext('2d');
+  let bom=drawPlan(cvT,ctxT,p,ors,'bot');
+  if(numMats===2){ctxT.setTransform(1,0,0,1,0,0);bom=[...bom,...drawPlan(cvT,ctxT,p,ors,'top')];}
+  PRINT=false;
+  draw();
+
+  const sp=slabProps(p,ors);
+  const lft=computeLifters(p,ors,sp);
+  const gLF=bom.reduce((s,r)=>s+r.totalLF,0),gWt=bom.reduce((s,r)=>s+r.totalLF*r.wt,0);
+  const loadT=(lft.loadPerLft/2000).toFixed(2),allowT=(lft.allowLb/2000).toFixed(2);
+
+  let html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Slab Rebar</title>'+
+    '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:sans-serif;padding:10px;background:#fff}'+
+    'img{width:100%;max-width:720px;border:1px solid #999;margin-bottom:10px;display:block}'+
+    'h2{font-size:13px;margin:8px 0 4px;color:#111}p{font-size:10px;color:#555;margin-bottom:8px}'+
+    'table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}th{background:#ddd;padding:4px 6px;border:1px solid #aaa;text-align:left}'+
+    'td{padding:3px 6px;border:1px solid #ddd}td.r{text-align:right}.tot td{background:#eee;font-weight:600}.ok{color:#166534;font-weight:600}.fail{color:#991b1b;font-weight:600}'+
+    '@media print{body{padding:0.25in}img{page-break-inside:avoid}h2{page-break-after:avoid}}'+
+    '</style></head><body>';
+  html+=`<h2>Top Slab - Reinforcement &nbsp;&middot;&nbsp; ${new Date().toLocaleDateString()}</h2>`;
+  html+=`<p>Slab ${frac(p.L)} x ${frac(p.W)}, t=${p.Tin}" | Wall ${p.wallIn}" | Bot cov ${p.covBotIn}" Top cov ${p.covTopIn}" | Edge ${p.ecIn}"<br>Net slab area ${sp.netA.toFixed(2)} sf | CG X=${frac(sp.cx)}, Y=${frac(sp.cy)} | Slab concrete wt=${kips(sp.wt)} lb @ ${sp.pcf} pcf</p>`;
+  imgs.forEach((img,i)=>{html+=`<h2>${labels[i]}</h2><img src="${img}">`;});
+  html+='<h2>Rebar B.O.M.</h2><table><thead><tr><th>Mark</th><th>Size</th><th>Qty</th><th>Type</th><th>Note</th><th class="r">Length</th><th class="r">Total LF</th><th class="r">Wt</th></tr></thead><tbody>';
+  bom.forEach(r=>{html+=`<tr><td>${r.mark}</td><td>${r.size}</td><td>${r.qty}</td><td>${r.type}</td><td style="font-size:9px">${r.note}</td><td class="r">${frac(r.len)}</td><td class="r">${r.totalLF.toFixed(1)}</td><td class="r">${(r.totalLF*r.wt).toFixed(0)}</td></tr>`;});
+  html+=`<tr class="tot"><td colspan="6" class="r">TOTAL</td><td class="r">${gLF.toFixed(1)}</td><td class="r">${gWt.toFixed(0)}</td></tr></tbody></table>`;
+  html+='<h2>Lifting Insert Schedule</h2>';
+  html+=`<p>Type: <b>${lft.lftType} insert</b> &nbsp;|&nbsp; Qty: <b>${lft.lftN}</b> &nbsp;|&nbsp; Rated capacity: <b>${lft.lftCap} t each</b> &nbsp;|&nbsp; Factor of safety: <b>${lft.lftFS}</b><br>`+
+    `Allowable load: <b>${allowT} t per lifter</b> &nbsp;|&nbsp; Actual load: <b>${loadT} t per lifter</b> &nbsp;|&nbsp; `+
+    `<span class="${lft.ok?'ok':'fail'}">${lft.ok?'✓ ADEQUATE':'⚠ OVERSTRESSED - INCREASE CAPACITY OR ADD LIFTERS'}</span></p>`;
+  html+='<table><thead><tr><th>Lifter</th><th class="r">X (ft-in)</th><th class="r">Y (ft-in)</th><th class="r">Load (t)</th><th class="r">Capacity (t)</th><th>Status</th></tr></thead><tbody>';
+  lft.pts.forEach((pt,i)=>{html+=`<tr><td>L${i+1} - ${lft.lftType}</td><td class="r">${frac(pt.x)}</td><td class="r">${frac(pt.y)}</td><td class="r">${loadT}</td><td class="r">${allowT}</td><td class="${lft.ok?'ok':'fail'}">${lft.ok?'OK':'OVER'}</td></tr>`;});
+  html+='</tbody></table>';
+  html+=`<p style="margin-top:6px;font-size:9px">CG at X=${frac(sp.cx)}, Y=${frac(sp.cy)} | CG offset from lifter centroid: ${(lft.offset*12).toFixed(1)}"</p>`;
+  html+='</body></html>';
+
+  // SharePoint often blocks window.open(), which caused: Cannot read properties of null (reading 'document').
+  // Print from a same-page hidden iframe instead, then fall back to downloading an HTML report if iframe printing is blocked.
+  try{
+    let frame=document.getElementById('printFrame');
+    if(frame)frame.remove();
+    frame=document.createElement('iframe');
+    frame.id='printFrame';
+    frame.style.position='fixed';frame.style.right='0';frame.style.bottom='0';frame.style.width='0';frame.style.height='0';frame.style.border='0';
+    document.body.appendChild(frame);
+    const doc=frame.contentWindow&&frame.contentWindow.document;
+    if(!doc)throw new Error('Print frame unavailable');
+    doc.open();doc.write(html);doc.close();
+    frame.onload=()=>{
+      try{frame.contentWindow.focus();frame.contentWindow.print();}
+      catch(e){downloadPDFHtml(html);}
+    };
+    setTimeout(()=>{try{frame.contentWindow.focus();frame.contentWindow.print();}catch(e){downloadPDFHtml(html);}},700);
+  }catch(e){
+    downloadPDFHtml(html);
+  }
+}
+
+function downloadPDFHtml(html){
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='slab_rebar_print_report.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  const t=document.getElementById('toast');
+  if(t){t.textContent='PDF print was blocked. Downloaded a printable HTML report instead.';t.className='toast on';setTimeout(()=>t.className='toast',3500);}
+}
+
+function exportDXF(){
+  const p=gp(),ors=openings.map(getOR);
+  const s=12,wFt=p.wallIn/12,ec=p.ecIn/12,ext=p.extIn/12,Tft=p.Tin/12;
+  const E=[];
+  function clean(txt){return String(txt).replace(/[–—]/g,'-').toUpperCase();}
+  function Ln(x1,y1,x2,y2,layer,ofx,ofy){E.push(`0\nLINE\n8\n${layer}\n10\n${((x1+ofx)*s).toFixed(3)}\n20\n${((y1+ofy)*s).toFixed(3)}\n30\n0\n11\n${((x2+ofx)*s).toFixed(3)}\n21\n${((y2+ofy)*s).toFixed(3)}\n31\n0\n`);}
+  function Cr(cx,cy,r,layer,ofx,ofy){E.push(`0\nCIRCLE\n8\n${layer}\n10\n${((cx+ofx)*s).toFixed(3)}\n20\n${((cy+ofy)*s).toFixed(3)}\n30\n0\n40\n${(r*s).toFixed(3)}\n`);}
+  function Tt(x,y,h,txt,layer,ofx,ofy,al){txt=clean(txt);E.push(`0\nTEXT\n8\n${layer}\n10\n${((x+ofx)*s).toFixed(3)}\n20\n${((y+ofy)*s).toFixed(3)}\n30\n0\n40\n${(h*s).toFixed(3)}\n1\n${txt}\n72\n${al||0}\n`);}
+  function Rect(x1,y1,x2,y2,layer,ofx,ofy){Ln(x1,y1,x2,y1,layer,ofx,ofy);Ln(x2,y1,x2,y2,layer,ofx,ofy);Ln(x2,y2,x1,y2,layer,ofx,ofy);Ln(x1,y2,x1,y1,layer,ofx,ofy);}
+  function DimH(x1,x2,y,off,txt,ofx,ofy){Ln(x1,y,x1,y+off,'DIMS',ofx,ofy);Ln(x2,y,x2,y+off,'DIMS',ofx,ofy);Ln(x1,y+off,x2,y+off,'DIMS',ofx,ofy);Tt((x1+x2)/2,y+off+0.10,0.08,txt,'DIMS',ofx,ofy,1);}
+  function DimV(y1,y2,x,off,txt,ofx,ofy){Ln(x,y1,x+off,y1,'DIMS',ofx,ofy);Ln(x,y2,x+off,y2,'DIMS',ofx,ofy);Ln(x+off,y1,x+off,y2,'DIMS',ofx,ofy);Tt(x+off+0.08,(y1+y2)/2,0.08,txt,'DIMS',ofx,ofy);}
+  function Leader(px,py,t1,t2,dx,dy,layer,ofx,ofy){
+    const lx=px+dx,ly=py+dy,tail=lx+(dx>=0?0.9:-0.9);
+    Ln(px,py,lx,ly,layer,ofx,ofy);Ln(lx,ly,tail,ly,layer,ofx,ofy);
+    const tx=tail+(dx>=0?0.05:-0.05);
+    Tt(tx,ly+0.08,0.075,t1,layer,ofx,ofy,dx>=0?0:2);
+    if(t2)Tt(tx,ly-0.10,0.06,t2,layer,ofx,ofy,dx>=0?0:2);
+  }
+
+  function dxfPlan(mat,ofx,ofy){
+    const iB=mat==='bot';
+    const d=planData(p,ors,mat);
+    const spcXin=iB?p.bSpcX:p.tSpcX,spcYin=iB?p.bSpcY:p.tSpcY;
+    const barXn=iB?p.bBarX:p.tBarX,barYn=iB?p.bBarY:p.tBarY;
+    const xL='REBAR_X_'+(iB?'BOT':'TOP'),yL='REBAR_Y_'+(iB?'BOT':'TOP');
+    const Y=y=>p.W-y;
+    Rect(0,Y(0),p.L,Y(p.W),'SLAB',ofx,ofy);
+    Rect(wFt,Y(wFt),p.L-wFt,Y(p.W-wFt),'WALL',ofx,ofy);
+    Ln(ec,Y(0),ec,Y(p.W),'EDGE',ofx,ofy);Ln(p.L-ec,Y(0),p.L-ec,Y(p.W),'EDGE',ofx,ofy);Ln(0,Y(ec),p.L,Y(ec),'EDGE',ofx,ofy);Ln(0,Y(p.W-ec),p.L,Y(p.W-ec),'EDGE',ofx,ofy);
+    for(const b of d.xBars){const clips=b.clips.slice().sort((a,c)=>a.lo-c.lo);let cur=ec;
+      for(const c of clips){if(c.lo>cur)Ln(cur,Y(b.pos),Math.min(c.lo,p.L-ec),Y(b.pos),xL,ofx,ofy);cur=Math.max(cur,c.hi);}
+      if(cur<p.L-ec)Ln(cur,Y(b.pos),p.L-ec,Y(b.pos),xL,ofx,ofy);}
+    for(const b of d.yBars){const clips=b.clips.slice().sort((a,c)=>a.lo-c.lo);let cur=ec;
+      for(const c of clips){if(c.lo>cur)Ln(b.pos,Y(cur),b.pos,Y(Math.min(c.lo,p.W-ec)),yL,ofx,ofy);cur=Math.max(cur,c.hi);}
+      if(cur<p.W-ec)Ln(b.pos,Y(cur),b.pos,Y(p.W-ec),yL,ofx,ofy);}
+    for(const ex of d.extras){
+      for(const ya of ex.addXpos)Ln(ec,Y(ya),p.L-ec,Y(ya),'ADDL',ofx,ofy);
+      for(const xa of ex.addYpos)Ln(xa,Y(ec),xa,Y(p.W-ec),'ADDL',ofx,ofy);
+      const verts=diamond(ex.or_),sides=[[verts[3],verts[0]],[verts[0],verts[1]],[verts[1],verts[2]],[verts[2],verts[3]]];
+      for(const[va,vb]of sides){const dx=vb[0]-va[0],dy=vb[1]-va[1],sl=Math.sqrt(dx*dx+dy*dy);if(sl<.001)continue;const ux=dx/sl,uy=dy/sl;Ln(va[0]-ux*ext,Y(va[1]-uy*ext),vb[0]+ux*ext,Y(vb[1]+uy*ext),'TRIM',ofx,ofy);}
+    }
+    for(const or_ of ors){
+      if(or_.isCirc)Cr(or_.cx,Y(or_.cy),or_.r,'OPENINGS',ofx,ofy);
+      else Rect(or_.x1,Y(or_.y1),or_.x2,Y(or_.y2),'OPENINGS',ofx,ofy);
+      Tt(or_.cx,Y(or_.cy)-0.08,0.10,'O'+or_.id,'OPENINGS',ofx,ofy,1);
+    }
+    const sp=slabProps(p,ors);
+    Ln(sp.cx-0.35,Y(sp.cy),sp.cx+0.35,Y(sp.cy),'CG',ofx,ofy);Ln(sp.cx,Y(sp.cy)-0.35,sp.cx,Y(sp.cy)+0.35,'CG',ofx,ofy);Cr(sp.cx,Y(sp.cy),0.16,'CG',ofx,ofy);
+    const bx=sp.cx+0.45,by=Y(sp.cy)+0.55,bw=3.25,bh=0.62;
+    Rect(bx,by,bx+bw,by-bh,'CG',ofx,ofy);Ln(sp.cx,Y(sp.cy),bx,by-bh/2,'CG',ofx,ofy);
+    Tt(bx+0.10,by-0.20,0.07,'CG  X='+frac(sp.cx)+'  Y='+frac(sp.cy),'CG',ofx,ofy);
+    Tt(bx+0.10,by-0.44,0.06,'SLAB WT='+kips(sp.wt)+' LB','CG',ofx,ofy);
+    // Lifters
+    const lft=computeLifters(p,ors,sp);
+    const lR=0.20;  // lifter symbol radius in ft
+    lft.pts.forEach((pt,i)=>{
+      const lx=pt.x,ly=Y(pt.y);
+      Cr(lx,ly,lR,'LIFTERS',ofx,ofy);
+      Ln(lx-lR+0.02,ly,lx+lR-0.02,ly,'LIFTERS',ofx,ofy);
+      Ln(lx,ly-lR+0.02,lx,ly+lR-0.02,'LIFTERS',ofx,ofy);
+      Tt(lx,ly-lR-0.14,0.08,'L'+(i+1),'LIFTERS',ofx,ofy,1);
+      Tt(lx,ly+lR+0.06,0.065,frac(pt.x)+','+frac(pt.y),'LIFTERS',ofx,ofy,1);
+    });
+    const loadT=(lft.loadPerLft/2000).toFixed(2),allowT=(lft.allowLb/2000).toFixed(2);
+    Tt(0,Y(0)-0.55,0.075,lft.lftType.toUpperCase()+' INSERT  '+lft.lftN+'X'+lft.lftCap+'T  FS='+lft.lftFS+'  '+loadT+'T/EA (ALLOW '+allowT+'T)  '+(lft.ok?'OK':'OVER'),'LIFTERS',ofx,ofy);
+    DimH(0,p.L,Y(0)+0.20,0.42,frac(p.L),ofx,ofy);
+    DimV(Y(p.W),Y(0),p.L+0.22,0.45,frac(p.W),ofx,ofy);
+    Tt(p.L/2,Y(p.W)-0.55,0.10,'#'+barYn+' @'+spcYin+'" X-DIR  L='+frac(p.L-2*ec),'CALLOUTS',ofx,ofy,1);
+    Tt(p.L+0.65,Y(p.W/2),0.10,'#'+barXn+' @'+spcXin+'" Y-DIR  L='+frac(p.W-2*ec),'CALLOUTS',ofx,ofy);
+    Tt(p.L-0.10,Y(p.W)-0.55,0.10,(iB?'BOTTOM':'TOP')+' MAT -- PLAN','TITLE',ofx,ofy,2);
+    const xMB=d.xBars.find(b=>b.pos>p.W*.6&&!b.clips.length);
+    if(xMB)Leader(p.L-ec,Y(xMB.pos),`${d.mX}--#${d.barYn}`,`@${d.spcYin}" ${iB?'BOT':'TOP'}`,1.25,0.45,'CALLOUTS',ofx,ofy);
+    const yMB=d.yBars.find(b=>b.pos>p.L*.6&&!b.clips.length);
+    if(yMB)Leader(yMB.pos,Y(ec),`${d.mY}--#${d.barXn}`,`@${d.spcXin}" ${iB?'BOT':'TOP'}`,1.25,0.55,'CALLOUTS',ofx,ofy);
+    for(const ex of d.extras){
+      if(ex.mAX&&ex.addXpos.length)Leader(p.L-ec,Y(ex.addXpos[0]),`${ex.mAX}--#${d.barYn}`,`${ex.addXn} ADD'L (= ${ex.intX} INT)`,1.15,-0.45,'CALLOUTS',ofx,ofy);
+      if(ex.mAY&&ex.addYpos.length)Leader(ex.addYpos[0],Y(ec),`${ex.mAY}--#${d.barXn}`,`${ex.addYn} ADD'L (= ${ex.intY} INT)`,-1.15,0.45,'CALLOUTS',ofx,ofy);
+      const v=diamond(ex.or_);Leader((v[0][0]+v[1][0])/2,Y((v[0][1]+v[1][1])/2),`${ex.mTrim}--#${p.barTrim}`,'TRIM',1.15,0.45,'CALLOUTS',ofx,ofy);
+    }
+  }
+
+  function dxfSection(axis,ofx,ofy){
+    const span=axis==='L'?p.L:p.W;
+    const bCircBar=axis==='L'?p.bBarX:p.bBarY,bCircSpc=(axis==='L'?p.bSpcX:p.bSpcY)/12;
+    const bLineBar=axis==='L'?p.bBarY:p.bBarX,bLineLen=axis==='L'?(p.L-2*ec):(p.W-2*ec);
+    const tCircBar=axis==='L'?p.tBarX:p.tBarY,tCircSpc=(axis==='L'?p.tSpcX:p.tSpcY)/12;
+    const tLineBar=axis==='L'?p.tBarY:p.tBarX,tLineLen=axis==='L'?(p.L-2*ec):(p.W-2*ec);
+
+    // Match the on-screen/PDF section geometry.  Use the top of slab as y=0
+    // and draw downward to -Tft so the DXF view matches the canvas view.
+    const topY=0,bottomY=-Tft;
+    Rect(0,topY,span,bottomY,'SECTION',ofx,ofy);
+
+    const covB=p.covBotIn/12,covT=p.covTopIn/12;
+    function mat(circBar,circSpc,lineBar,lineLen,isTop){
+      const cov=isTop?covT:covB;
+      const rC=(BAR_DIA[circBar]/12)/2,rL=(BAR_DIA[lineBar]/12)/2;
+      let yC,yL,covTo;
+      if(axis==='W'){
+        // Section // Width: horizontal line is below the circles for bottom mat.
+        if(!isTop){yL=bottomY+cov+rL;yC=yL+rL+rC;covTo=yL-rL;}
+        else{yL=topY-cov-rL;yC=yL-rL-rC;covTo=yL+rL;}
+      }else{
+        // Section // Length: circles are closest to the face; line is inside.
+        if(!isTop){yC=bottomY+cov+rC;yL=yC+rC+rL;covTo=yC-rC;}
+        else{yC=topY-cov-rC;yL=yC-rC-rL;covTo=yC+rC;}
+      }
+      const lay=isTop?'SEC_TOP':'SEC_BOT';
+      for(let cx=circSpc/2;cx<span;cx+=circSpc){if(cx<ec||cx>span-ec)continue;Cr(cx,yC,rC,lay,ofx,ofy);}
+      Ln(ec,yL,ec+lineLen,yL,lay,ofx,ofy);
+      Tt(ec+0.08,isTop?yL-0.16:yL+0.07,0.07,'#'+lineBar+' L='+frac(lineLen),lay,ofx,ofy);
+      Tt(circSpc/2+0.10,yC+0.08,0.06,'#'+circBar+' @'+(circSpc*12).toFixed(0)+'"',lay,ofx,ofy);
+      const dx=span+0.55,y0=isTop?topY:bottomY;
+      Ln(dx,y0,dx,covTo,lay,ofx,ofy);
+      Ln(dx-0.06,y0,dx+0.06,y0,lay,ofx,ofy);
+      Ln(dx-0.06,covTo,dx+0.06,covTo,lay,ofx,ofy);
+      Tt(dx+0.10,(y0+covTo)/2,0.07,(isTop?p.covTopIn:p.covBotIn)+'" '+(isTop?'TOP':'BOT'),lay,ofx,ofy);
+    }
+    mat(bCircBar,bCircSpc,bLineBar,bLineLen,false);
+    if(numMats===2)mat(tCircBar,tCircSpc,tLineBar,tLineLen,true);
+
+    DimH(0,span,topY+0.20,0.38,frac(span),ofx,ofy);
+    DimV(bottomY,topY,span+1.10,0.45,'t='+p.Tin+'"',ofx,ofy);
+    Tt(span/2,topY+1.02,0.09,axis==='L'?'SECTION ALONG LENGTH':'SECTION ALONG WIDTH','TITLE',ofx,ofy,1);
+    Tt(span/2,topY+0.78,0.065,axis==='L'?'(X-DIR=LINE, Y-DIR=CIRCLES)':'(Y-DIR=LINE, X-DIR=CIRCLES)','CALLOUTS',ofx,ofy,1);
+  }
+
+  function drawBomTable(rows,ofx,ofy){
+    const cols=[0,1.25,2.30,3.20,5.35,8.45,10.25,11.75,12.95];
+    const rh=0.34,headH=0.38;
+    let y=0;
+    Tt(0,y+0.32,0.12,'REBAR B.O.M.','TITLE',ofx,ofy);
+    y-=0.12;
+    const top=y,bottom=y-headH-rh*(rows.length+1);
+    Rect(cols[0],top,cols[cols.length-1],bottom,'BOM',ofx,ofy);
+    for(const c of cols)Ln(c,top,c,bottom,'BOM',ofx,ofy);
+    Ln(cols[0],top-headH,cols[cols.length-1],top-headH,'BOM',ofx,ofy);
+    for(let i=0;i<=rows.length;i++)Ln(cols[0],top-headH-rh*i,cols[cols.length-1],top-headH-rh*i,'BOM',ofx,ofy);
+    const headers=['MARK','SIZE','QTY','TYPE','NOTE','LENGTH','TOTAL LF','WT'];
+    headers.forEach((h,i)=>Tt(cols[i]+0.08,top-0.26,0.06,h,'BOM',ofx,ofy));
+    rows.forEach((r,i)=>{
+      const yy=top-headH-rh*i-0.24;
+      const vals=[r.mark,r.size,r.qty,r.type,r.note,frac(r.len),r.totalLF.toFixed(1),(r.totalLF*r.wt).toFixed(0)];
+      vals.forEach((v,j)=>Tt(cols[j]+0.08,yy,j===4?0.048:0.055,v,'BOM',ofx,ofy));
+    });
+    const gLF=rows.reduce((a,r)=>a+r.totalLF,0),gWt=rows.reduce((a,r)=>a+r.totalLF*r.wt,0);
+    const ty=top-headH-rh*rows.length-0.24;
+    Tt(cols[4]+0.08,ty,0.06,'TOTAL','BOM',ofx,ofy);
+    Tt(cols[6]+0.08,ty,0.06,gLF.toFixed(1),'BOM',ofx,ofy);
+    Tt(cols[7]+0.08,ty,0.06,gWt.toFixed(0),'BOM',ofx,ofy);
+    const sp=slabProps(p,ors);
+    Tt(0,bottom-0.40,0.06,'SLAB '+frac(p.L)+' X '+frac(p.W)+'  T='+p.Tin+'"  NET AREA '+sp.netA.toFixed(2)+' SF  CG X='+frac(sp.cx)+' Y='+frac(sp.cy)+'  SLAB WT '+kips(sp.wt)+' LB @ '+sp.pcf+' PCF','BOM',ofx,ofy);
+  }
+
+  const planH=p.W+3.2,planGapX=p.L+5;
+  const secLY=-(planH+2.8),secWY=secLY-(Tft+4.2);
+  dxfPlan('bot',0,0);
+  if(numMats===2)dxfPlan('top',planGapX,0);
+  dxfSection('L',0,secLY);
+  dxfSection('W',0,secWY);
+
+  let bom=planData(p,ors,'bot').rows;
+  if(numMats===2)bom=[...bom,...planData(p,ors,'top').rows];
+  const bomX=(numMats===2?planGapX*2:p.L+5)+1;
+  drawBomTable(bom,bomX,p.W+0.8);
+
+  // Lifter schedule table in DXF
+  const sp2=slabProps(p,ors);
+  const lft2=computeLifters(p,ors,sp2);
+  const lftCols=[0,1.4,3.0,4.6,6.2,7.8,9.5];
+  const lrh=0.34,lhH=0.38;
+  let lby=p.W-1.0;
+  Tt(bomX,lby+0.32,0.12,'LIFTING INSERT SCHEDULE','TITLE',0,0);lby-=0.12;
+  const ltop=lby,lbot=lby-lhH-lrh*(lft2.pts.length+1);
+  Rect(lftCols[0],ltop,lftCols[lftCols.length-1],lbot,'LIFTERS',bomX,0);
+  for(const c of lftCols)Ln(c,ltop,c,lbot,'LIFTERS',bomX,0);
+  Ln(lftCols[0],ltop-lhH,lftCols[lftCols.length-1],ltop-lhH,'LIFTERS',bomX,0);
+  for(let i=0;i<=lft2.pts.length;i++)Ln(lftCols[0],ltop-lhH-lrh*i,lftCols[lftCols.length-1],ltop-lhH-lrh*i,'LIFTERS',bomX,0);
+  ['LIFTER','X','Y','LOAD (T)','ALLOW (T)','STATUS'].forEach((h,i)=>Tt(lftCols[i]+0.08,ltop-0.26,0.06,h,'LIFTERS',bomX,0));
+  const loadT2=(lft2.loadPerLft/2000).toFixed(2),allowT2=(lft2.allowLb/2000).toFixed(2);
+  lft2.pts.forEach((pt,i)=>{
+    const yy=ltop-lhH-lrh*i-0.24;
+    const vals=['L'+(i+1)+' '+lft2.lftType.toUpperCase(),frac(pt.x),frac(pt.y),loadT2,allowT2,lft2.ok?'OK':'OVER'];
+    vals.forEach((v,j)=>Tt(lftCols[j]+0.08,yy,0.055,v,'LIFTERS',bomX,0));
+  });
+  Tt(lftCols[0]+0.08,lbot-0.30,0.06,'TYPE: '+lft2.lftType.toUpperCase()+'  QTY: '+lft2.lftN+'  CAP: '+lft2.lftCap+'T EACH  FS: '+lft2.lftFS+'  CG OFFSET: '+(lft2.offset*12).toFixed(1)+'"','LIFTERS',bomX,0);
+
+  const layers=[['SLAB','7'],['WALL','8'],['REBAR_X_BOT','1'],['REBAR_Y_BOT','1'],['REBAR_X_TOP','5'],['REBAR_Y_TOP','5'],['ADDL','4'],['TRIM','3'],['OPENINGS','1'],['EDGE','2'],['DIMS','2'],['TITLE','7'],['CALLOUTS','3'],['SECTION','7'],['SEC_BOT','1'],['SEC_TOP','5'],['BOM','3'],['CG','6'],['LIFTERS','6']];
+  let ls='';for(const[n,c]of layers)ls+=`0\nLAYER\n2\n${n}\n70\n0\n62\n${c}\n6\nCONTINUOUS\n`;
+  const dxf=`0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n1\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n${layers.length}\n${ls}0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n${E.join('')}0\nENDSEC\n0\nEOF\n`;
+  const blob=new Blob([dxf],{type:'application/dxf'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='slab_rebar_full.dxf';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  const t=document.getElementById('toast');t.textContent='DXF exported: bottom plan, top plan, both sections, dims, callouts, bar list, lifter schedule';t.className='toast on';setTimeout(()=>t.className='toast',3500);
+}
+
+draw();
+</script>
+</body>
+</html>
